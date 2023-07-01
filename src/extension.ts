@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Hello World from vscode-launchable!");
     });
 
-    const provider = new LaunchableTreeDataProvider();
+    const provider = new LaunchableTreeDataProvider(context.secrets);
 
     vscode.window.createTreeView("launchableTreeView", {
         treeDataProvider: provider,
@@ -37,6 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 const asyncExec = promisify(cp.exec);
+const launchableTokenKey = "LaunchableToken";
 
 class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private treeItems: vscode.TreeItem[] = [];
@@ -44,7 +45,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return element;
     }
 
-    constructor() {
+    constructor(private readonly secretStorage: vscode.SecretStorage) {
         this.treeItems = [
             new LaunchableTreeItem("Start Test", {
                 iconPath: new vscode.ThemeIcon("play-circle"),
@@ -64,26 +65,39 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async createTree() {
+        let launchableToken = this.secretStorage.get(launchableTokenKey);
+        if (!launchableToken) {
+            launchableToken = vscode.window.showInputBox({
+                ignoreFocusOut: true,
+                password: true,
+                placeHolder: "Workspace API key",
+                validateInput: async (token) => {
+                    if (token.length === 0) {
+                        return "API key can not be empty";
+                    }
+                    return null;
+                },
+            });
+        }
         this.treeItems[0].iconPath = new vscode.ThemeIcon("sync~spin");
         this.treeItems[0].label = "Runing";
         this.treeItems[0].command = undefined;
         this._onDidChangeTreeData.fire();
-        const pythonPath = await getPythonPath();
+        const pythonPath = (await getPythonPath()) || "python";
         const folders = vscode.workspace.workspaceFolders;
         if (folders === undefined) {
             return;
         }
         const opts: cp.ExecOptions = {
-            env: {
-                LAUNCHABLE_TOKEN: "",
-            },
             cwd: folders[0].uri.fsPath,
         };
+        opts.env = { ...process.env };
+        opts.env.LAUNCHABLE_TOKEN = await launchableToken;
 
         try {
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
-            console.error(error);
+            await this.secretStorage.delete(launchableTokenKey);
             return;
         }
 
@@ -164,15 +178,15 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 }
 
 async function getPythonPath(): Promise<string | undefined> {
-    // https://github.com/microsoft/vscode-python/issues/11294
+        // https://github.com/microsoft/vscode-python/issues/11294
     const extension = vscode.extensions.getExtension("ms-python.python")!;
-    if (!extension.isActive) {
-        await extension.activate();
-    }
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders) {
-        return extension.exports.settings.getExecutionDetails(workspaceFolders[0].uri).execCommand[0];
-    }
+            if (!extension.isActive) {
+                await extension.activate();
+            }
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (workspaceFolders) {
+                return extension.exports.settings.getExecutionDetails(workspaceFolders[0].uri).execCommand[0];
+            }
 }
 
 type LaunchableTreeItemOptions = Pick<
