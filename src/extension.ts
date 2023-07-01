@@ -21,17 +21,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     const provider = new LaunchableTreeDataProvider(context.secrets);
 
-    vscode.window.createTreeView("launchableTreeView", {
-        treeDataProvider: provider,
-    });
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider("launchableTreeView", provider),
 
-    vscode.commands.registerCommand("hoge", (uri: vscode.Uri) => {
-        vscode.env.openExternal(uri);
-    });
+        vscode.commands.registerCommand("hoge", (uri: vscode.Uri) => {
+            vscode.env.openExternal(uri);
+        }),
 
-    vscode.commands.registerCommand("startTest", () => {
-        provider.createTree();
-    });
+        vscode.commands.registerCommand("startTest", () => {
+            provider.createTree();
+        }),
+    );
 
     context.subscriptions.push(disposable);
 }
@@ -178,8 +178,11 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 }
 
 async function getPythonPath(): Promise<string | undefined> {
+    try {
         // https://github.com/microsoft/vscode-python/issues/11294
-    const extension = vscode.extensions.getExtension("ms-python.python")!;
+        const extension = vscode.extensions.getExtension("ms-python.python");
+        const flagValue = extension?.packageJSON?.featureFlags?.usingNewInterpreterStorage;
+        if (flagValue) {
             if (!extension.isActive) {
                 await extension.activate();
             }
@@ -187,6 +190,8 @@ async function getPythonPath(): Promise<string | undefined> {
             if (workspaceFolders) {
                 return extension.exports.settings.getExecutionDetails(workspaceFolders[0].uri).execCommand[0];
             }
+        }
+    } catch (error) {}
 }
 
 type LaunchableTreeItemOptions = Pick<
