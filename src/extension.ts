@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand("startTest", () => {
-            provider.createTree();
+            provider.startTest();
         }),
     );
 
@@ -64,7 +64,19 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return this.treeItems;
     }
 
-    async createTree() {
+    cleanup(tempDir?: string) {
+        this.treeItems[0].label = "Start Test";
+        this.treeItems[0].iconPath = new vscode.ThemeIcon("play-circle");
+        this.treeItems[0].command = {
+            title: "foo",
+            command: "startTest",
+        };
+        if (tempDir) {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    }
+
+    async startTest() {
         let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
             launchableToken = await vscode.window.showInputBox({
