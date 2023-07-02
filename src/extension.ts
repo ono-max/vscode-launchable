@@ -65,9 +65,9 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async createTree() {
-        let launchableToken = this.secretStorage.get(launchableTokenKey);
+        let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
-            launchableToken = vscode.window.showInputBox({
+            launchableToken = await vscode.window.showInputBox({
                 ignoreFocusOut: true,
                 password: true,
                 placeHolder: "Workspace API key",
@@ -89,10 +89,13 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             return;
         }
         const opts: cp.ExecOptions = {
+            env: {
+                ...process.env,
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                LAUNCHABLE_TOKEN: launchableToken,
+            },
             cwd: folders[0].uri.fsPath,
         };
-        opts.env = { ...process.env };
-        opts.env.LAUNCHABLE_TOKEN = await launchableToken;
 
         try {
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
