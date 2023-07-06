@@ -41,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 const asyncExec = promisify(cp.exec);
 const launchableTokenKey = "LaunchableToken";
+const testRunnerKey = "testRunner";
 
 class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private treeItems: vscode.TreeItem[] = [];
@@ -49,7 +50,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return element;
     }
 
-    constructor(private readonly secretStorage: vscode.SecretStorage) {
+    constructor(private readonly secretStorage: vscode.SecretStorage, private readonly workspaceState: vscode.Memento) {
         this.treeItems = [
             new LaunchableTreeItem("Start Test", {
                 iconPath: new vscode.ThemeIcon("play-circle"),
@@ -89,6 +90,14 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
     }
 
+    getTestRunner(testRunnerName: string): TestRunner | undefined {
+        switch (testRunnerName) {
+            case "maven":
+                return new Maven();
+        }
+        return void 0;
+    }
+
     async start() {
         let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
@@ -106,6 +115,21 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             if (!launchableToken) {
                 return;
             }
+        }
+        let testRunnerName = this.workspaceState.get<string>(testRunnerKey);
+        if (!testRunnerName) {
+            const result = await vscode.window.showQuickPick(["maven"], {
+                placeHolder: "Choose your test runner",
+            });
+            if (!result) {
+                return;
+            }
+            testRunnerName = result;
+            this.workspaceState.update(testRunnerKey, testRunnerName);
+        }
+        const testRunner = this.getTestRunner(testRunnerName);
+        if (!testRunner) {
+            return;
         }
         this.treeItems[0].iconPath = new vscode.ThemeIcon("sync~spin");
         this.treeItems[0].label = "Runing";
@@ -125,7 +149,6 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             cwd: folders[0].uri.fsPath,
         };
 
-        const testRunner = new Maven();
         try {
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
