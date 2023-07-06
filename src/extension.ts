@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider("launchableTreeView", provider),
 
-        vscode.commands.registerCommand("hoge", (uri: vscode.Uri) => {
+        vscode.commands.registerCommand("openLink", (uri: vscode.Uri) => {
             vscode.env.openExternal(uri);
         }),
 
@@ -198,7 +198,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                     new LaunchableTreeItem(`Test Session: #${found[2].toString()}`, {
                         command: {
                             title: "foo",
-                            command: "hoge",
+                            command: "openLink",
                             arguments: [vscode.Uri.parse(found[1].toString())],
                         },
                     }),
