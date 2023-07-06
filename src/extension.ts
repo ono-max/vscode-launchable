@@ -8,6 +8,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { Maven } from "./maven";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -124,6 +125,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             cwd: folders[0].uri.fsPath,
         };
 
+        const testRunner = new Maven();
         try {
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
@@ -146,7 +148,10 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 
         let stdout: string;
         try {
-            const result = await asyncExec(`${pythonPath} -m launchable subset --target 80% maven src/test/java`, opts);
+            const result = await asyncExec(
+                `${pythonPath} -m launchable subset --target 80% ${testRunner.name} ${testRunner.testCasePath}`,
+                opts,
+            );
             stdout = result.stdout;
             const subset = new LaunchableTreeItem("Subset of Tests", {});
             subset.children = [];
@@ -174,7 +179,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
 
         try {
-            await asyncExec(`/opt/homebrew/bin/mvn test -Dsurefire.includesFile=${subsetPath}`, opts);
+            await asyncExec(testRunner.getRunningCommand(subsetPath), opts);
         } catch (error) {
             console.error(error);
             vscode.window.showErrorMessage("Launchable: Running tests is failed");
@@ -183,7 +188,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 
         try {
             const { stdout } = await asyncExec(
-                `${pythonPath} -m launchable record tests maven target/surefire-reports/TEST-example.*.xml`,
+                `${pythonPath} -m launchable record tests ${testRunner.name} ${testRunner.testReportPath}`,
                 opts,
             );
             const found = stdout.match(/(https:\/\/app.launchableinc.com\/organizations.*\/(.*))\sto/);
