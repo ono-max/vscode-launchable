@@ -6,6 +6,8 @@ import * as cp from "child_process";
 import { promisify } from "util";
 import * as crypto from "crypto";
 import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -41,6 +43,7 @@ const launchableTokenKey = "LaunchableToken";
 
 class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private treeItems: vscode.TreeItem[] = [];
+    private tempDir: string | undefined;
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
         return element;
     }
@@ -64,19 +67,28 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return this.treeItems;
     }
 
-    cleanup(tempDir?: string) {
+    cleanup() {
         this.treeItems[0].label = "Start Test";
         this.treeItems[0].iconPath = new vscode.ThemeIcon("play-circle");
         this.treeItems[0].command = {
             title: "foo",
             command: "startTest",
         };
-        if (tempDir) {
-            fs.rmSync(tempDir, { recursive: true, force: true });
+        this._onDidChangeTreeData.fire();
+        if (this.tempDir) {
+            fs.rmSync(this.tempDir, { recursive: true, force: true });
         }
     }
 
     async startTest() {
+        try {
+            await this.start();
+        } finally {
+            this.cleanup();
+        }
+    }
+
+    async start() {
         let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
             launchableToken = await vscode.window.showInputBox({
@@ -112,6 +124,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         try {
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
+            console.error(error);
             await this.secretStorage.delete(launchableTokenKey);
             return;
         }
@@ -124,30 +137,36 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             return;
         }
 
+        let stdout: string;
         try {
             const result = await asyncExec(`${pythonPath} -m launchable subset --target 80% maven src/test/java`, opts);
+            stdout = result.stdout;
             const subset = new LaunchableTreeItem("Subset of Tests", {});
             subset.children = [];
             subset.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-            for (const r of result.stdout.trim().split("\n")) {
+            for (const r of stdout.trim().split("\n")) {
                 subset.children.push(new LaunchableTreeItem(r, {}));
             }
             this.treeItems.push(subset);
-            try {
-                fs.writeFileSync("/Users/s15236/workspace/launchable-java-example/test.txt", result.stdout);
-            } catch (error) {
-                console.error(error);
-            }
         } catch (error) {
             console.error(error);
             return;
         }
 
         try {
-            await asyncExec(
-                `/opt/homebrew/bin/mvn test -Dsurefire.includesFile=/Users/s15236/workspace/launchable-java-example/test.txt`,
-                opts,
-            );
+            this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vscode-launchable-"));
+        } catch (error) {
+            console.error(error);
+        }
+        const subsetPath = this.tempDir + "/" + Date.now.toString() + ".txt";
+        try {
+            fs.writeFileSync(subsetPath, stdout);
+        } catch (error) {
+            console.error(error);
+        }
+
+        try {
+            await asyncExec(`/opt/homebrew/bin/mvn test -Dsurefire.includesFile=${subsetPath}`, opts);
         } catch (error) {
             console.error(error);
             return;
