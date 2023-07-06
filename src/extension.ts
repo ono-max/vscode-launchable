@@ -125,7 +125,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             await asyncExec(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
             console.error(error);
-            await this.secretStorage.delete(launchableTokenKey);
+            this.secretStorage.delete(launchableTokenKey);
+            vscode.window.showErrorMessage("Launchable: Verifing Launchable is failed");
             return;
         }
 
@@ -134,6 +135,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             await asyncExec(`${pythonPath} -m launchable record build --name ${uuid}`, opts);
         } catch (error) {
             console.error(error);
+            vscode.window.showErrorMessage("Launchable: Recording builds is failed");
             return;
         }
 
@@ -150,6 +152,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             this.treeItems.push(subset);
         } catch (error) {
             console.error(error);
+            vscode.window.showErrorMessage("Launchable: Subsetting is failed");
             return;
         }
 
@@ -169,6 +172,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             await asyncExec(`/opt/homebrew/bin/mvn test -Dsurefire.includesFile=${subsetPath}`, opts);
         } catch (error) {
             console.error(error);
+            vscode.window.showErrorMessage("Launchable: Running tests is failed");
             return;
         }
 
@@ -194,6 +198,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             }
         } catch (error) {
             console.error(error);
+            vscode.window.showErrorMessage("Launchable: Recording tests is failed");
             return;
         }
         this.treeItems[0].label = "Start Test";
