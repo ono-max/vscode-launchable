@@ -133,6 +133,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             return;
         }
 
+        this.secretStorage.store(launchableTokenKey, launchableToken);
+
         const uuid = crypto.randomUUID();
         try {
             await asyncExec(`${pythonPath} -m launchable record build --name ${uuid}`, opts);
