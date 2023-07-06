@@ -102,6 +102,9 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                     return null;
                 },
             });
+            if (!launchableToken) {
+                return;
+            }
         }
         this.treeItems[0].iconPath = new vscode.ThemeIcon("sync~spin");
         this.treeItems[0].label = "Runing";
