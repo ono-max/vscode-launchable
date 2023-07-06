@@ -161,7 +161,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         } catch (error) {
             console.error(error);
         }
-        const subsetPath = this.tempDir + "/" + Date.now.toString() + ".txt";
+        const subsetPath = this.tempDir + "/" + Date.now().toString() + ".txt";
         try {
             fs.writeFileSync(subsetPath, stdout);
         } catch (error) {
