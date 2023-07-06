@@ -8,8 +8,8 @@ export class Maven implements TestRunner {
 
     constructor() {
         this.name = "maven";
-        this.testCasePath = getTestRunnerPath() || "mvn";
-        this.testRunnerPath = getTestRunnerPath() || "src/test/java";
+        this.testCasePath = getTestRunnerPath() || "src/test/java";
+        this.testRunnerPath = getTestRunnerPath() || "mvn";
         this.testReportPath = "target/surefire-reports/*.xml";
     }
 
