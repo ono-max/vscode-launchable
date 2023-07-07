@@ -34,6 +34,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand("startTest", () => {
             provider.startTest();
         }),
+
+        vscode.commands.registerCommand("initSetting", () => {
+            provider.initSetting();
+        }),
     );
 
     context.subscriptions.push(disposable);
@@ -98,34 +102,57 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return void 0;
     }
 
+    async initSetting() {
+        const token = await this.inputLaunchableToken();
+        if (!token) {
+            return;
+        }
+        this.secretStorage.store(launchableTokenKey, token);
+        const runner = await this.inputTestRunner();
+        if (!runner) {
+            return;
+        }
+        this.workspaceState.update(testRunnerKey, runner);
+    }
+
+    async inputLaunchableToken() {
+        return vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            password: true,
+            placeHolder: "Workspace API key",
+            validateInput: async (token) => {
+                if (token.length === 0) {
+                    return "API key can not be empty";
+                }
+                return null;
+            },
+        });
+    }
+
+    async inputTestRunner() {
+        return vscode.window.showQuickPick(["maven"], {
+            placeHolder: "Choose your test runner",
+        });
+    }
+
     async start() {
         let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
-            launchableToken = await vscode.window.showInputBox({
-                ignoreFocusOut: true,
-                password: true,
-                placeHolder: "Workspace API key",
-                validateInput: async (token) => {
-                    if (token.length === 0) {
-                        return "API key can not be empty";
-                    }
-                    return null;
-                },
-            });
-            if (!launchableToken) {
+            const token = await this.inputLaunchableToken();
+            if (!token) {
                 return;
             }
+            this.secretStorage.store(launchableTokenKey, token);
+            launchableToken = token;
         }
         let testRunnerName = this.workspaceState.get<string>(testRunnerKey);
         if (!testRunnerName) {
-            const result = await vscode.window.showQuickPick(["maven"], {
-                placeHolder: "Choose your test runner",
-            });
-            if (!result) {
+            const name = await this.inputTestRunner();
+            if (!name) {
                 return;
             }
-            testRunnerName = result;
-            this.workspaceState.update(testRunnerKey, testRunnerName);
+            this.workspaceState.update(testRunnerKey, name);
+            testRunnerName = name;
         }
         const testRunner = this.getTestRunner(testRunnerName);
         if (!testRunner) {
@@ -154,6 +181,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         } catch (error) {
             console.error(error);
             this.secretStorage.delete(launchableTokenKey);
+            this.workspaceState.update(testRunnerKey, undefined);
             vscode.window.showErrorMessage("Launchable: Verifing Launchable is failed");
             return;
         }
