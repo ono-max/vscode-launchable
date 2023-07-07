@@ -23,20 +23,21 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const provider = new LaunchableTreeDataProvider(context.secrets);
+    const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
 
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider("launchableTreeView", provider),
 
-        vscode.commands.registerCommand("openLink", (uri: vscode.Uri) => {
+        vscode.commands.registerCommand("launchable.openLink", (uri: vscode.Uri) => {
             vscode.env.openExternal(uri);
         }),
 
-        vscode.commands.registerCommand("startTest", () => {
+        vscode.commands.registerCommand("launchable.startTest", () => {
             provider.startTest();
         }),
 
-        vscode.commands.registerCommand("initSetting", () => {
-            provider.initSetting();
+        vscode.commands.registerCommand("launchable.initSettings", () => {
+            provider.initSettings();
         }),
     );
 
@@ -59,8 +60,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             new LaunchableTreeItem("Start Test", {
                 iconPath: new vscode.ThemeIcon("play-circle"),
                 command: {
-                    title: "foo",
-                    command: "startTest",
+                    title: "launchable.startTest",
+                    command: "launchable.startTest",
                 },
             }),
         ];
@@ -77,8 +78,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         this.treeItems[0].label = "Start Test";
         this.treeItems[0].iconPath = new vscode.ThemeIcon("play-circle");
         this.treeItems[0].command = {
-            title: "foo",
-            command: "startTest",
+            title: "launchable.startTest",
+            command: "launchable.startTest",
         };
         this._onDidChangeTreeData.fire();
         if (this.tempDir) {
@@ -102,7 +103,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         return void 0;
     }
 
-    async initSetting() {
+    async initSettings() {
         const token = await this.inputLaunchableToken();
         if (!token) {
             return;
@@ -248,8 +249,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                 result.children = [
                     new LaunchableTreeItem(`Test Session: #${found[2].toString()}`, {
                         command: {
-                            title: "foo",
-                            command: "openLink",
+                            title: "launchable.openLink",
+                            command: "launchable.openLink",
                             arguments: [vscode.Uri.parse(found[1].toString())],
                         },
                     }),
@@ -265,8 +266,8 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         this.treeItems[0].label = "Start Test";
         this.treeItems[0].iconPath = new vscode.ThemeIcon("play-circle");
         this.treeItems[0].command = {
-            title: "foo",
-            command: "startTest",
+            title: "launchable.startTest",
+            command: "launchable.startTest",
         };
         this._onDidChangeTreeData.fire();
     }
