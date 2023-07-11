@@ -168,11 +168,14 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (folders === undefined) {
             return;
         }
+        // TODO: sort runtimes and choose the latest one
+        const runtimes = await findRuntimes();
         const opts: cp.ExecOptions = {
             env: {
                 ...process.env,
                 // eslint-disable-next-line @typescript-eslint/naming-convention
                 LAUNCHABLE_TOKEN: launchableToken,
+                JAVA_HOME: runtimes[0].homedir,
             },
             cwd: folders[0].uri.fsPath,
         };
