@@ -184,9 +184,10 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         const opts: cp.ExecOptions = {
             env: {
                 ...process.env,
-                // eslint-disable-next-line @typescript-eslint/naming-convention
+                /* eslint-disable @typescript-eslint/naming-convention */
                 LAUNCHABLE_TOKEN: launchableToken,
                 JAVA_HOME: runtimes[0].homedir,
+                /* eslint-enable @typescript-eslint/naming-convention */
             },
             cwd: folders[0].uri.fsPath,
         };
