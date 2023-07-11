@@ -3,6 +3,6 @@ interface TestRunner {
     readonly testCasePath: string;
     readonly testRunnerPath: string;
     readonly testReportPath: string;
-
-    getRunningCommand(subsetPath: string): string;
+    readonly subsetPath: string;
+    readonly runningTestCmd: string;
 }

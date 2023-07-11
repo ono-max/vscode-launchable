@@ -9,6 +9,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Maven } from "./maven";
+import { Rspec } from "./rspec";
+import { findRuntimes } from "jdk-utils";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -22,7 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Hello World from vscode-launchable!");
     });
 
-    const provider = new LaunchableTreeDataProvider(context.secrets);
+    context.workspaceState.update(testRunnerKey, undefined);
+    context.secrets.delete(launchableTokenKey);
     const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
 
     context.subscriptions.push(
@@ -95,10 +98,12 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
     }
 
-    getTestRunner(testRunnerName: string): TestRunner | undefined {
+    getTestRunner(testRunnerName: string, tempDir: string): TestRunner | undefined {
         switch (testRunnerName) {
             case "maven":
-                return new Maven();
+                return new Maven(tempDir);
+            case "rspec":
+                return new Rspec(tempDir);
         }
         return void 0;
     }
@@ -131,7 +136,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async inputTestRunner() {
-        return vscode.window.showQuickPick(["maven"], {
+        return vscode.window.showQuickPick(["maven", "rspec"], {
             placeHolder: "Choose your test runner",
         });
     }
@@ -155,7 +160,13 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             this.workspaceState.update(testRunnerKey, name);
             testRunnerName = name;
         }
-        const testRunner = this.getTestRunner(testRunnerName);
+        try {
+            this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vscode-launchable-"));
+        } catch (error) {
+            console.error(error);
+            return;
+        }
+        const testRunner = this.getTestRunner(testRunnerName, this.tempDir);
         if (!testRunner) {
             return;
         }
@@ -222,19 +233,14 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
 
         try {
-            this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vscode-launchable-"));
+            fs.writeFileSync(testRunner.subsetPath, stdout);
         } catch (error) {
             console.error(error);
-        }
-        const subsetPath = this.tempDir + "/" + Date.now().toString() + ".txt";
-        try {
-            fs.writeFileSync(subsetPath, stdout);
-        } catch (error) {
-            console.error(error);
+            return;
         }
 
         try {
-            await asyncExec(testRunner.getRunningCommand(subsetPath), opts);
+            await asyncExec(testRunner.runningTestCmd, opts);
         } catch (error) {
             console.error(error);
             vscode.window.showErrorMessage("Launchable: Running tests is failed");

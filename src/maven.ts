@@ -5,15 +5,15 @@ export class Maven implements TestRunner {
     testCasePath: string;
     testRunnerPath: string;
     testReportPath: string;
+    subsetPath: string;
+    runningTestCmd: string;
 
-    constructor() {
+    constructor(tempDir: string) {
         this.name = "maven";
         this.testCasePath = getTestRunnerPath() || "src/test/java";
         this.testRunnerPath = getTestRunnerPath() || "mvn";
+        this.subsetPath = tempDir + "/" + "subset-" + Date.now().toString() + ".txt";
         this.testReportPath = "target/surefire-reports/*.xml";
-    }
-
-    getRunningCommand(subsetPath: string) {
-        return `${this.testRunnerPath} test -Dsurefire.includesFile=${subsetPath}`;
+        this.runningTestCmd = `${this.testRunnerPath} test -Dsurefire.includesFile=${this.subsetPath}`;
     }
 }
