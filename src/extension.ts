@@ -256,13 +256,6 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         } catch (error) {
             return;
         }
-        this.treeItems[0].label = "Start Test";
-        this.treeItems[0].iconPath = new vscode.ThemeIcon("play-circle");
-        this.treeItems[0].command = {
-            title: "launchable.startTest",
-            command: "launchable.startTest",
-        };
-        this._onDidChangeTreeData.fire();
         this.treeItems.concat(treeItems);
     }
 
