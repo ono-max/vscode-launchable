@@ -40,6 +40,8 @@ const asyncExec = promisify(cp.exec);
 const launchableTokenKey = "LaunchableToken";
 const testRunnerKey = "testRunner";
 
+const outputChannel = vscode.window.createOutputChannel("launchable");
+
 class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private treeItems: vscode.TreeItem[] = [];
     private tempDir: string | undefined;
@@ -80,6 +82,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async startTest() {
+        outputChannel.clear();
         try {
             await this.start();
         } finally {
@@ -182,12 +185,10 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         };
 
         try {
-            await asyncExec(`${pythonPath} -m launchable verify`, opts);
+            await executeCommand(`${pythonPath} -m launchable verify`, opts);
         } catch (error) {
-            console.error(error);
             this.secretStorage.delete(launchableTokenKey);
             this.workspaceState.update(testRunnerKey, undefined);
-            vscode.window.showErrorMessage("Launchable: Verifing Launchable is failed");
             return;
         }
 
@@ -195,16 +196,14 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 
         const uuid = crypto.randomUUID();
         try {
-            await asyncExec(`${pythonPath} -m launchable record build --name ${uuid}`, opts);
+            await executeCommand(`${pythonPath} -m launchable record build --name ${uuid}`, opts);
         } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("Launchable: Recording builds is failed");
             return;
         }
 
         let stdout: string;
         try {
-            const result = await asyncExec(
+            const result = await executeCommand(
                 `${pythonPath} -m launchable subset --target 80% ${testRunner.name} ${testRunner.testCasePath}`,
                 opts,
             );
@@ -217,8 +216,6 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             }
             this.treeItems.push(subset);
         } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("Launchable: Subsetting is failed");
             return;
         }
 
@@ -230,15 +227,13 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
 
         try {
-            await asyncExec(testRunner.runningTestCmd, opts);
+            await executeCommand(testRunner.runningTestCmd, opts);
         } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("Launchable: Running tests is failed");
             return;
         }
 
         try {
-            const { stdout } = await asyncExec(
+            const { stdout } = await executeCommand(
                 `${pythonPath} -m launchable record tests ${testRunner.name} ${testRunner.testReportPath}`,
                 opts,
             );
@@ -258,8 +253,6 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                 this.treeItems.push(result);
             }
         } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("Launchable: Recording tests is failed");
             return;
         }
         this.treeItems[0].label = "Start Test";
@@ -275,6 +268,25 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
+}
+
+async function executeCommand(cmd: string, opts: cp.ExecOptions) {
+    outputChannel.appendLine(`Running: ${cmd}`);
+    try {
+        return await asyncExec(cmd, opts);
+    } catch (error) {
+        if (error instanceof Error) {
+            outputChannel.appendLine(error.message);
+        }
+        vscode.window
+            .showErrorMessage("Launchable: Verifing Launchable is failed", "Check error logs")
+            .then((select) => {
+                if (select) {
+                    outputChannel.show();
+                }
+            });
+        throw error;
+    }
 }
 
 async function getPythonPath(): Promise<string | undefined> {
