@@ -134,6 +134,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async start() {
+        const treeItems: vscode.TreeItem[] = [];
         let launchableToken = await this.secretStorage.get(launchableTokenKey);
         if (!launchableToken) {
             const token = await this.inputLaunchableToken();
@@ -214,7 +215,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             for (const r of stdout.trim().split("\n")) {
                 subset.children.push(new LaunchableTreeItem(r, {}));
             }
-            this.treeItems.push(subset);
+            treeItems.push(subset);
         } catch (error) {
             return;
         }
@@ -250,7 +251,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                     }),
                 ];
                 result.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-                this.treeItems.push(result);
+                treeItems.push(result);
             }
         } catch (error) {
             return;
@@ -262,6 +263,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             command: "launchable.startTest",
         };
         this._onDidChangeTreeData.fire();
+        this.treeItems.concat(treeItems);
     }
 
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> =
