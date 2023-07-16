@@ -2,6 +2,7 @@
     "name": "vscode-launchable",
     "displayName": "vscode-launchable",
     "description": "",
+    "publisher": "ono-max",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.78.0"
@@ -34,6 +35,18 @@
                     "name": "launchable Tree View"
                 }
             ]
+        },
+        "configuration": {
+            "properties": {
+                "launchable.testRunnerPath": {
+                    "type": "string",
+                    "description": "The path to the test runner"
+                },
+                "launchable.testCasePath": {
+                    "type": "string",
+                    "description": "The path to the full list of tests. It can be the glob expression such as `test/**/*.rb`"
+                }
+            }
         }
     },
     "scripts": {
