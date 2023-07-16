@@ -7,3 +7,11 @@ export function getTestRunnerPath() {
 export function getTestCasePath() {
     return vscode.workspace.getConfiguration("launchable").get<string>("testCasePath");
 }
+
+export function getSubsetPath(tempDir: string) {
+    return tempDir + "/" + "subset-" + Date.now().toString() + ".txt";
+}
+
+export function getTestReportPath(tempDir: string) {
+    return tempDir + "/" + "report-" + Date.now().toString() + ".txt";
+}

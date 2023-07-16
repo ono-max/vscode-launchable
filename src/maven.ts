@@ -1,4 +1,4 @@
-import { getTestRunnerPath } from "./utils";
+import { getSubsetPath, getTestRunnerPath } from "./utils";
 
 export class Maven implements TestRunner {
     name: string;
@@ -11,7 +11,7 @@ export class Maven implements TestRunner {
         this.name = "maven";
         this.testCasePath = getTestRunnerPath() || "src/test/java";
         const testRunnerPath = getTestRunnerPath() || "mvn";
-        this.subsetPath = tempDir + "/" + "subset-" + Date.now().toString() + ".txt";
+        this.subsetPath = getSubsetPath(tempDir);
         this.testReportPath = "target/surefire-reports/*.xml";
         this.runningTestCmd = `${testRunnerPath} test -Dsurefire.includesFile=${this.subsetPath}`;
     }

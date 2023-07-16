@@ -1,4 +1,4 @@
-import { getTestRunnerPath } from "./utils";
+import { getSubsetPath, getTestReportPath, getTestRunnerPath } from "./utils";
 
 export class Rspec implements TestRunner {
     name: string;
@@ -11,8 +11,8 @@ export class Rspec implements TestRunner {
         this.name = "rspec";
         this.testCasePath = getTestRunnerPath() || "spec/**/*_spec.rb";
         const testRunnerPath = getTestRunnerPath() || "bundle exec rspec";
-        this.subsetPath = tempDir + "/" + "subset-" + Date.now().toString() + ".txt";
-        this.testReportPath = tempDir + "/" + "report-" + Date.now().toString() + ".txt";
+        this.subsetPath = getSubsetPath(tempDir);
+        this.testReportPath = getTestReportPath(tempDir);
         this.runningTestCmd = `${testRunnerPath} $(cat ${this.subsetPath}) --format d --format RspecJunitFormatter --out ${this.testReportPath}`;
     }
 }
