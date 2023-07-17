@@ -14,7 +14,7 @@ An extension to use [Launchable](https://www.launchableinc.com/) features in Vis
 * maven
 * rspec
 * go-test
-* pytst
+* pytest
 
 ## Extension Settings
 
