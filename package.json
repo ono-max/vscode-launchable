@@ -39,15 +39,27 @@
         "configuration": {
             "properties": {
                 "launchable.testRunnerPath": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null,
                     "description": "The path to the test runner"
                 },
                 "launchable.testCasePath": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null,
                     "description": "The path to the full list of tests. It can be the glob expression such as `test/**/*.rb`"
                 },
                 "launchable.testListCommand": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null,
                     "description": "The command to output the full list of tests, e.g. find ./test -name '*.js'."
                 }
             }
