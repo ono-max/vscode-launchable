@@ -1,27 +1,27 @@
 import * as vscode from "vscode";
 
 export function getTestRunnerPath() {
-    return vscode.workspace.getConfiguration("launchable").get<string>("testRunnerPath");
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("testRunnerPath");
 }
 
 export function getTestCasePath() {
-    return vscode.workspace.getConfiguration("launchable").get<string>("testCasePath");
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("testCasePath");
 }
 
 export function getTestListCommand() {
-    return vscode.workspace.getConfiguration("launchable").get<string>("testListCommand");
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("testListCommand");
 }
 
 export function getConfidenceTarget() {
-    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("confidence");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string | null>("confidence");
 }
 
 export function getFixedTimeTarget() {
-    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("fixedTime");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string | null>("fixedTime");
 }
 
 export function getPercentageTimeTarget() {
-    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("percentageTime");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string | null>("percentageTime");
 }
 
 export function getSubsetPath(tempDir: string) {
