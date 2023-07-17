@@ -10,6 +10,7 @@ import { Rspec } from "./rspec";
 import { findRuntimes } from "jdk-utils";
 import { LaunchableTreeItem, getPythonPath } from "./utils";
 import { promisify } from "util";
+import { GoTest } from "./goTest";
 
 const launchableTokenKey = "LaunchableToken";
 const testRunnerKey = "testRunner";
@@ -87,6 +88,8 @@ export class TestSubsetRunner {
                 return new Maven(tempDir);
             case "rspec":
                 return new Rspec(tempDir);
+            case "go-test":
+                return new GoTest(tempDir);
         }
         return void 0;
     }
@@ -106,7 +109,7 @@ export class TestSubsetRunner {
     }
 
     static async inputTestRunner() {
-        return vscode.window.showQuickPick(["maven", "rspec"], {
+        return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
             placeHolder: "Choose your test runner",
         });
     }
@@ -173,10 +176,18 @@ export class TestSubsetRunner {
             return;
         }
 
+        let subsetCommand: string = "";
+        if (this.testRunner.testListCommand) {
+            subsetCommand += `${this.testRunner.testListCommand} | `;
+        }
+        subsetCommand += `${this.pythonPath} -m launchable subset --target 80% ${this.testRunner.name}`;
+        if (this.testRunner.testCasePath) {
+            subsetCommand += ` ${this.testRunner.testCasePath}`;
+        }
         let stdout: string;
         try {
             const result = await this.execLaunchableCommand(
-                `${this.pythonPath} -m launchable subset --target 80% ${this.testRunner.name} ${this.testRunner.testCasePath}`,
+                subsetCommand,
                 this.execOpts,
             );
             stdout = result.stdout;
@@ -200,6 +211,7 @@ export class TestSubsetRunner {
         }
 
         // When a test is failed, we should not show an error message.
+        this.outputChannel.appendLine(`Running: ${this.testRunner.runningTestCmd}`);
         try {
             await asyncExec(this.testRunner.runningTestCmd, this.execOpts);
         } catch (error) {

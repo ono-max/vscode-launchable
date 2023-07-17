@@ -8,6 +8,10 @@ export function getTestCasePath() {
     return vscode.workspace.getConfiguration("launchable").get<string>("testCasePath");
 }
 
+export function getTestListCommand() {
+    return vscode.workspace.getConfiguration("launchable").get<string>("testListCommand");
+}
+
 export function getSubsetPath(tempDir: string) {
     return tempDir + "/" + "subset-" + Date.now().toString() + ".txt";
 }

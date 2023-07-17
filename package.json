@@ -45,6 +45,10 @@
                 "launchable.testCasePath": {
                     "type": "string",
                     "description": "The path to the full list of tests. It can be the glob expression such as `test/**/*.rb`"
+                },
+                "launchable.testListCommand": {
+                    "type": "string",
+                    "description": "The command to output the full list of tests, e.g. find ./test -name '*.js'."
                 }
             }
         }

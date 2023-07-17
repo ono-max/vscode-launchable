@@ -130,7 +130,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     async inputTestRunner() {
-        return vscode.window.showQuickPick(["maven", "rspec"], {
+        return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
             placeHolder: "Choose your test runner",
         });
     }
