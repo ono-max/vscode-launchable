@@ -20,6 +20,12 @@ export function getTestReportPath(tempDir: string) {
     return tempDir + "/" + "report-" + Date.now().toString() + ".txt";
 }
 
+export function inputTestRunner() {
+    return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
+        placeHolder: "Choose your test runner",
+    });
+}
+
 export async function getPythonPath(): Promise<string | undefined> {
     try {
         // https://github.com/microsoft/vscode-python/issues/11294

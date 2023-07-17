@@ -6,7 +6,7 @@ import * as fs from "fs";
 import { Maven } from "./maven";
 import { Rspec } from "./rspec";
 import { TestSubsetRunner } from "./testSubsetRunner";
-import { LaunchableTreeItem } from "./utils";
+import { LaunchableTreeItem, inputTestRunner } from "./utils";
 
 export function activate(context: vscode.ExtensionContext) {
     // TODO: Remove this parts before releasing
@@ -108,7 +108,7 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
             return;
         }
         this.secretStorage.store(launchableTokenKey, token);
-        const runner = await this.inputTestRunner();
+        const runner = await inputTestRunner();
         if (!runner) {
             return;
         }
@@ -126,12 +126,6 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
                 }
                 return null;
             },
-        });
-    }
-
-    async inputTestRunner() {
-        return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
-            placeHolder: "Choose your test runner",
         });
     }
 

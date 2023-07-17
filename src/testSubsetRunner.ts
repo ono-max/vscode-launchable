@@ -8,7 +8,7 @@ import * as crypto from "crypto";
 import { Maven } from "./maven";
 import { Rspec } from "./rspec";
 import { findRuntimes } from "jdk-utils";
-import { LaunchableTreeItem, getPythonPath } from "./utils";
+import { LaunchableTreeItem, getPythonPath, inputTestRunner } from "./utils";
 import { promisify } from "util";
 import { GoTest } from "./goTest";
 
@@ -33,7 +33,7 @@ export class TestSubsetRunner {
         }
         let testRunnerName = workspaceState.get<string>(testRunnerKey);
         if (!testRunnerName) {
-            const name = await this.inputTestRunner();
+            const name = await inputTestRunner();
             if (!name) {
                 return;
             }
@@ -105,12 +105,6 @@ export class TestSubsetRunner {
                 }
                 return null;
             },
-        });
-    }
-
-    static async inputTestRunner() {
-        return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
-            placeHolder: "Choose your test runner",
         });
     }
 
@@ -186,10 +180,7 @@ export class TestSubsetRunner {
         }
         let stdout: string;
         try {
-            const result = await this.execLaunchableCommand(
-                subsetCommand,
-                this.execOpts,
-            );
+            const result = await this.execLaunchableCommand(subsetCommand, this.execOpts);
             stdout = result.stdout;
             const subset = new LaunchableTreeItem("Subset of Tests", {});
             subset.children = [];
