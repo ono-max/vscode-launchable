@@ -13,15 +13,15 @@ export function getTestListCommand() {
 }
 
 export function getConfidenceTarget() {
-    return vscode.workspace.getConfiguration("launchable.subset").get<string>("confidenceTarget");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("confidence");
 }
 
 export function getFixedTimeTarget() {
-    return vscode.workspace.getConfiguration("launchable.subset").get<string>("fixedTimeTarget");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("fixedTime");
 }
 
 export function getPercentageTimeTarget() {
-    return vscode.workspace.getConfiguration("launchable.subset").get<string>("percentageTimeTarget");
+    return vscode.workspace.getConfiguration("launchable.optimizationTarget").get<string>("percentageTime");
 }
 
 export function getSubsetPath(tempDir: string) {
