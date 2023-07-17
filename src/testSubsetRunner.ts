@@ -8,7 +8,14 @@ import * as crypto from "crypto";
 import { Maven } from "./maven";
 import { Rspec } from "./rspec";
 import { findRuntimes } from "jdk-utils";
-import { LaunchableTreeItem, getPythonPath, inputTestRunner } from "./utils";
+import {
+    LaunchableTreeItem,
+    getConfidenceTarget,
+    getFixedTimeTarget,
+    getPercentageTimeTarget,
+    getPythonPath,
+    inputTestRunner,
+} from "./utils";
 import { promisify } from "util";
 import { GoTest } from "./goTest";
 import { Pytest } from "./pytest";
@@ -177,10 +184,23 @@ export class TestSubsetRunner {
         if (this.testRunner.testListCommand) {
             subsetCommand += `${this.testRunner.testListCommand} | `;
         }
-        subsetCommand += `${this.pythonPath} -m launchable subset --target 80% ${this.testRunner.name}`;
+        subsetCommand += `${this.pythonPath} -m launchable subset`;
+        const confidence = getConfidenceTarget();
+        if (confidence) {
+            subsetCommand += ` --confidence ${confidence}`;
+        }
+        const fixed = getFixedTimeTarget();
+        if (fixed) {
+            subsetCommand += ` --time ${fixed}`;
+        }
+        const percentage = getPercentageTimeTarget();
+        if (percentage) {
+            subsetCommand += ` --target ${percentage}`;
+        }
         if (this.testRunner.testCasePath) {
             subsetCommand += ` ${this.testRunner.testCasePath}`;
         }
+        subsetCommand += ` ${this.testRunner.name}`;
         let stdout: string;
         try {
             const result = await this.execLaunchableCommand(subsetCommand, this.execOpts);

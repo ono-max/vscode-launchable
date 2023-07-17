@@ -61,6 +61,27 @@
                     ],
                     "default": null,
                     "description": "The command to output the full list of tests, e.g. find ./test -name '*.js'."
+                },
+                "launchable.subset.confidenceTarget": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "launchable.subset.fixedTimeTarget": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "launchable.subset.percentageTimeTarget": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": "80%"
                 }
             }
         }
