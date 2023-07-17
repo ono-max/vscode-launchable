@@ -2,15 +2,11 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 
-import * as cp from "child_process";
-import { promisify } from "util";
-import * as crypto from "crypto";
 import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
 import { Maven } from "./maven";
 import { Rspec } from "./rspec";
-import { findRuntimes } from "jdk-utils";
+import { TestSubsetRunner } from "./testSubsetRunner";
+import { LaunchableTreeItem } from "./utils";
 
 export function activate(context: vscode.ExtensionContext) {
     // TODO: Remove this parts before releasing
@@ -36,7 +32,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
 }
 
-const asyncExec = promisify(cp.exec);
 const launchableTokenKey = "LaunchableToken";
 const testRunnerKey = "testRunner";
 
@@ -83,8 +78,15 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
 
     async startTest() {
         outputChannel.clear();
+        this.treeItems[0].iconPath = new vscode.ThemeIcon("sync~spin");
+        this.treeItems[0].label = "Runing";
+        this.treeItems[0].command = undefined;
+        this._onDidChangeTreeData.fire();
         try {
-            await this.start();
+            const testItems = await TestSubsetRunner.run(this.secretStorage, this.workspaceState, outputChannel);
+            if (testItems) {
+                this.treeItems = this.treeItems.concat(testItems);
+            }
         } finally {
             this.cleanup();
         }
@@ -133,188 +135,10 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         });
     }
 
-    async start() {
-        const treeItems: vscode.TreeItem[] = [];
-        let launchableToken = await this.secretStorage.get(launchableTokenKey);
-        if (!launchableToken) {
-            const token = await this.inputLaunchableToken();
-            if (!token) {
-                return;
-            }
-            this.secretStorage.store(launchableTokenKey, token);
-            launchableToken = token;
-        }
-        let testRunnerName = this.workspaceState.get<string>(testRunnerKey);
-        if (!testRunnerName) {
-            const name = await this.inputTestRunner();
-            if (!name) {
-                return;
-            }
-            this.workspaceState.update(testRunnerKey, name);
-            testRunnerName = name;
-        }
-        try {
-            this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "vscode-launchable-"));
-        } catch (error) {
-            console.error(error);
-            return;
-        }
-        const testRunner = this.getTestRunner(testRunnerName, this.tempDir);
-        if (!testRunner) {
-            return;
-        }
-        this.treeItems[0].iconPath = new vscode.ThemeIcon("sync~spin");
-        this.treeItems[0].label = "Runing";
-        this.treeItems[0].command = undefined;
-        this._onDidChangeTreeData.fire();
-        const pythonPath = (await getPythonPath()) || "python";
-        const folders = vscode.workspace.workspaceFolders;
-        if (folders === undefined) {
-            return;
-        }
-        // TODO: sort runtimes and choose the latest one
-        const runtimes = await findRuntimes();
-        const opts: cp.ExecOptions = {
-            env: {
-                ...process.env,
-                /* eslint-disable @typescript-eslint/naming-convention */
-                LAUNCHABLE_TOKEN: launchableToken,
-                JAVA_HOME: runtimes[0].homedir,
-                /* eslint-enable @typescript-eslint/naming-convention */
-            },
-            cwd: folders[0].uri.fsPath,
-        };
-
-        try {
-            await executeCommand(`${pythonPath} -m launchable verify`, opts);
-        } catch (error) {
-            this.secretStorage.delete(launchableTokenKey);
-            this.workspaceState.update(testRunnerKey, undefined);
-            return;
-        }
-
-        this.secretStorage.store(launchableTokenKey, launchableToken);
-
-        const uuid = crypto.randomUUID();
-        try {
-            await executeCommand(`${pythonPath} -m launchable record build --name ${uuid}`, opts);
-        } catch (error) {
-            return;
-        }
-
-        let stdout: string;
-        try {
-            const result = await executeCommand(
-                `${pythonPath} -m launchable subset --target 80% ${testRunner.name} ${testRunner.testCasePath}`,
-                opts,
-            );
-            stdout = result.stdout;
-            const subset = new LaunchableTreeItem("Subset of Tests", {});
-            subset.children = [];
-            subset.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-            for (const r of stdout.trim().split("\n")) {
-                subset.children.push(new LaunchableTreeItem(r, {}));
-            }
-            treeItems.push(subset);
-        } catch (error) {
-            return;
-        }
-
-        try {
-            fs.writeFileSync(testRunner.subsetPath, stdout);
-        } catch (error) {
-            console.error(error);
-            return;
-        }
-
-        try {
-            await executeCommand(testRunner.runningTestCmd, opts);
-        } catch (error) {
-            return;
-        }
-
-        try {
-            const { stdout } = await executeCommand(
-                `${pythonPath} -m launchable record tests ${testRunner.name} ${testRunner.testReportPath}`,
-                opts,
-            );
-            const found = stdout.match(/(https:\/\/app.launchableinc.com\/organizations.*\/(.*))\sto/);
-            if (found) {
-                const result = new LaunchableTreeItem("Result", {});
-                result.children = [
-                    new LaunchableTreeItem(`Test Session: #${found[2].toString()}`, {
-                        command: {
-                            title: "launchable.openLink",
-                            command: "launchable.openLink",
-                            arguments: [vscode.Uri.parse(found[1].toString())],
-                        },
-                    }),
-                ];
-                result.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-                treeItems.push(result);
-            }
-        } catch (error) {
-            return;
-        }
-        this.treeItems.concat(treeItems);
-    }
-
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> =
         new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
-}
-
-async function executeCommand(cmd: string, opts: cp.ExecOptions) {
-    outputChannel.appendLine(`Running: ${cmd}`);
-    try {
-        return await asyncExec(cmd, opts);
-    } catch (error) {
-        if (error instanceof Error) {
-            outputChannel.appendLine(error.message);
-        }
-        vscode.window
-            .showErrorMessage("Launchable: Verifing Launchable is failed", "Check error logs")
-            .then((select) => {
-                if (select) {
-                    outputChannel.show();
-                }
-            });
-        throw error;
-    }
-}
-
-async function getPythonPath(): Promise<string | undefined> {
-    try {
-        // https://github.com/microsoft/vscode-python/issues/11294
-        const extension = vscode.extensions.getExtension("ms-python.python");
-        const flagValue = extension?.packageJSON?.featureFlags?.usingNewInterpreterStorage;
-        if (flagValue) {
-            if (!extension.isActive) {
-                await extension.activate();
-            }
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (workspaceFolders) {
-                return extension.exports.settings.getExecutionDetails(workspaceFolders[0].uri).execCommand[0];
-            }
-        }
-    } catch (error) {}
-}
-
-type LaunchableTreeItemOptions = Pick<
-    vscode.TreeItem,
-    "id" | "iconPath" | "collapsibleState" | "description" | "tooltip" | "resourceUri"
-> & {
-    command?: { title: string; command: string; arguments?: any[] };
-};
-
-class LaunchableTreeItem extends vscode.TreeItem {
-    public children?: vscode.TreeItem[];
-    constructor(label: string, opts: LaunchableTreeItemOptions) {
-        super(label);
-        this.iconPath = opts.iconPath;
-        this.command = opts.command;
-    }
 }
 
 // this method is called when your extension is deactivated
