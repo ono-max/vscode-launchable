@@ -21,7 +21,7 @@ export function getTestReportPath(tempDir: string) {
 }
 
 export function inputTestRunner() {
-    return vscode.window.showQuickPick(["maven", "rspec", "go-test"], {
+    return vscode.window.showQuickPick(["maven", "rspec", "go-test", "pytest"], {
         placeHolder: "Choose your test runner",
     });
 }

@@ -11,6 +11,7 @@ import { findRuntimes } from "jdk-utils";
 import { LaunchableTreeItem, getPythonPath, inputTestRunner } from "./utils";
 import { promisify } from "util";
 import { GoTest } from "./goTest";
+import { Pytest } from "./pytest";
 
 const launchableTokenKey = "LaunchableToken";
 const testRunnerKey = "testRunner";
@@ -47,7 +48,8 @@ export class TestSubsetRunner {
             vscode.window.showErrorMessage(`Failed to create a temporary directory: ${error}`);
             return;
         }
-        const testRunner = this.getTestRunner(testRunnerName, tempDir);
+        const pythonPath = (await getPythonPath()) || "python";
+        const testRunner = this.getTestRunner(testRunnerName, tempDir, pythonPath);
         if (!testRunner) {
             vscode.window.showErrorMessage(`Failed to get a test runner. Test Runner Name: ${testRunnerName}`);
             return;
@@ -68,7 +70,6 @@ export class TestSubsetRunner {
             },
             cwd: folders[0].uri.fsPath,
         };
-        const pythonPath = (await getPythonPath()) || "python";
         const runner = new TestSubsetRunner(
             secretStorage,
             workspaceState,
@@ -82,7 +83,7 @@ export class TestSubsetRunner {
         return runner.treeItems;
     }
 
-    static getTestRunner(testRunnerName: string, tempDir: string): TestRunner | undefined {
+    static getTestRunner(testRunnerName: string, tempDir: string, pythonPath: string): TestRunner | undefined {
         switch (testRunnerName) {
             case "maven":
                 return new Maven(tempDir);
@@ -90,6 +91,8 @@ export class TestSubsetRunner {
                 return new Rspec(tempDir);
             case "go-test":
                 return new GoTest(tempDir);
+            case "pytest":
+                return new Pytest(tempDir, pythonPath);
         }
         return void 0;
     }
