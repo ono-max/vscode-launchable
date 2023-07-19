@@ -19,6 +19,7 @@ import {
 import { promisify } from "util";
 import { GoTest } from "./goTest";
 import { Pytest } from "./pytest";
+import { File } from "./file";
 
 const launchableTokenKey = "LaunchableToken";
 const testRunnerKey = "testRunner";
@@ -56,7 +57,7 @@ export class TestSubsetRunner {
             return;
         }
         const pythonPath = (await getPythonPath()) || "python";
-        const testRunner = this.getTestRunner(testRunnerName, tempDir, pythonPath);
+        const testRunner = await this.getTestRunner(testRunnerName, tempDir, pythonPath);
         if (!testRunner) {
             vscode.window.showErrorMessage(`Failed to get a test runner. Test Runner Name: ${testRunnerName}`);
             return;
@@ -90,7 +91,11 @@ export class TestSubsetRunner {
         return runner.treeItems;
     }
 
-    static getTestRunner(testRunnerName: string, tempDir: string, pythonPath: string): TestRunner | undefined {
+    static async getTestRunner(
+        testRunnerName: string,
+        tempDir: string,
+        pythonPath: string,
+    ): Promise<TestRunner | undefined> {
         switch (testRunnerName) {
             case "maven":
                 return new Maven(tempDir);
@@ -100,6 +105,8 @@ export class TestSubsetRunner {
                 return new GoTest(tempDir);
             case "pytest":
                 return new Pytest(tempDir, pythonPath);
+            case "file":
+                return await File.create();
         }
         return void 0;
     }

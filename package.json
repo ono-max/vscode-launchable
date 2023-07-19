@@ -62,6 +62,27 @@
                     "default": null,
                     "description": "The command to output the full list of tests, e.g. find ./test -name '*.js'."
                 },
+                "launchable.subsetPath": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "launchable.testReportPath": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
+                "launchable.testRunCommand": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "default": null
+                },
                 "launchable.optimizationTarget.confidence": {
                     "type": [
                         "string",

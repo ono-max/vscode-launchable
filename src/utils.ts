@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "path";
 
 export function getTestRunnerPath() {
     return vscode.workspace.getConfiguration("launchable").get<string | null>("testRunnerPath");
@@ -10,6 +11,18 @@ export function getTestCasePath() {
 
 export function getTestListCommand() {
     return vscode.workspace.getConfiguration("launchable").get<string | null>("testListCommand");
+}
+
+export function getTestRunCommand() {
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("testRunCommand");
+}
+
+export function getSubsetPathConfig() {
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("subsetPath");
+}
+
+export function getTestReportPathConfig() {
+    return vscode.workspace.getConfiguration("launchable").get<string | null>("testReportPath");
 }
 
 export function getConfidenceTarget() {
@@ -33,7 +46,7 @@ export function getTestReportPath(tempDir: string) {
 }
 
 export function inputTestRunner() {
-    return vscode.window.showQuickPick(["maven", "rspec", "go-test", "pytest"], {
+    return vscode.window.showQuickPick(["maven", "rspec", "go-test", "pytest", "file"], {
         placeHolder: "Choose your test runner",
     });
 }
@@ -69,4 +82,15 @@ export class LaunchableTreeItem extends vscode.TreeItem {
         this.iconPath = opts.iconPath;
         this.command = opts.command;
     }
+}
+
+export function resolvePath(p: string) {
+    if (path.isAbsolute(p)) {
+        return p;
+    }
+    const workspace = vscode.workspace.workspaceFolders;
+    if (workspace === undefined) {
+        return p;
+    }
+    return path.join(workspace[0].uri.fsPath, p);
 }
