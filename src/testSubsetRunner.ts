@@ -245,7 +245,10 @@ export class TestSubsetRunner {
     private async execLaunchableCommand(cmd: string, opts: cp.ExecOptions) {
         this.outputChannel.appendLine(`Running: ${cmd}`);
         try {
-            return await asyncExec(cmd, opts);
+            const result = await asyncExec(cmd, opts);
+            this.outputChannel.appendLine(`stdout: ${result.stdout}`);
+            this.outputChannel.appendLine(`stderr: ${result.stderr}`);
+            return result;
         } catch (error) {
             if (error instanceof Error) {
                 this.outputChannel.appendLine(error.message);
