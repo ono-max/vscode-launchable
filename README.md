@@ -46,7 +46,7 @@ After a while, the result will be appeared as follows. If you click it, you can 
 * `launchable.subsetPath`: The path to the file that is a subset of tests
 * `launchable.testReportPath` The path to your test report files, e.g. ./reports/*.xml
     * By default, the following paths are used:
-        * maven: target/surefire-reports/*.xml
+        * maven: `target/surefire-reports/*.xml`
 * `launchable.testRunCommand`: The command to run tests
     * By default, the following commands are used:
         * maven: `mvn test -Dsurefire.includesFile=[SUBSET FILE]`
@@ -55,7 +55,7 @@ After a while, the result will be appeared as follows. If you click it, you can 
         * pytest: `[PYTHON PATH] -m pytest --junit-xml=[TEST REPORT PATH] $(cat [SUBSET FILE])`
             * `[PYTHON PATH]` is configured by `Python: Select Interpreter` command.
 
-You can configure a subset optimization target in the following fields. If you want to know the concept, please read https://www.launchableinc.com/docs/features/predictive-test-selection/requesting-and-running-a-subset-of-tests/choosing-a-subset-optimization-target/.
+You can configure a subset optimization target in the following fields. If you want to know the concept, please read [here](https://www.launchableinc.com/docs/features/predictive-test-selection/requesting-and-running-a-subset-of-tests/choosing-a-subset-optimization-target/).
 
 * `launchable.optimizationTarget.confidence`: Confidence target
 * `launchable.optimizationTarget.fixedTime`: Fixed time target
