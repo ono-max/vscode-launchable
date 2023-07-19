@@ -67,21 +67,24 @@
                         "string",
                         "null"
                     ],
-                    "default": null
+                    "default": null,
+                    "description": "The path to the file that is a subset of tests"
                 },
                 "launchable.testReportPath": {
                     "type": [
                         "string",
                         "null"
                     ],
-                    "default": null
+                    "default": null,
+                    "description": "The path to your test report files, e.g. ./reports/*.xml"
                 },
                 "launchable.testRunCommand": {
                     "type": [
                         "string",
                         "null"
                     ],
-                    "default": null
+                    "default": null,
+                    "description": "The command to run tests, e.g. mocha $(< launchable-subset.txt)"
                 },
                 "launchable.optimizationTarget.confidence": {
                     "type": [
@@ -101,14 +104,16 @@
                         "90%",
                         "100%"
                     ],
-                    "default": null
+                    "default": null,
+                    "description": "Confidence target for a subset optimization target"
                 },
                 "launchable.optimizationTarget.fixedTime": {
                     "type": [
                         "string",
                         "null"
                     ],
-                    "default": null
+                    "default": null,
+                    "description": "Fixed time target for a subset optimization target"
                 },
                 "launchable.optimizationTarget.percentageTime": {
                     "type": [
@@ -128,7 +133,8 @@
                         "90%",
                         "100%"
                     ],
-                    "default": "80%"
+                    "default": "80%",
+                    "description": "Percentage time taget for a subset optimization target"
                 }
             }
         }
