@@ -9,10 +9,6 @@ import { TestSubsetRunner } from "./testSubsetRunner";
 import { LaunchableTreeItem, inputTestRunner } from "./utils";
 
 export function activate(context: vscode.ExtensionContext) {
-    // TODO: Remove this parts before releasing
-    context.workspaceState.update(testRunnerKey, undefined);
-    context.secrets.delete(launchableTokenKey);
-
     const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
 
     context.subscriptions.push(
