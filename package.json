@@ -16,7 +16,7 @@
         "viewsContainers": {
             "activitybar": [
                 {
-                    "id": "package-explorer",
+                    "id": "launchableView",
                     "title": "Launchable",
                     "icon": "resources/icon.svg"
                 }
@@ -29,7 +29,7 @@
             }
         ],
         "views": {
-            "package-explorer": [
+            "launchableView": [
                 {
                     "id": "launchableTreeView",
                     "name": "launchable Tree View"
