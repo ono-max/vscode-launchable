@@ -18,7 +18,7 @@ jobs:
       run: |
         npm install
         npm install --global @vscode/vsce
-        vsce publish --baseContentUrl none
+        vsce publish --baseImagesUrl https://raw.githubusercontent.com/ono-max/vscode-launchable/main
       env:
         # https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
