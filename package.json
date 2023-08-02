@@ -12,6 +12,9 @@
     "engines": {
         "vscode": "^1.78.0"
     },
+    "bugs": {
+        "url": "https://github.com/ono-max/vscode-launchable/issues"
+    },
     "categories": [
         "Other"
     ],
