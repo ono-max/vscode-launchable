@@ -129,5 +129,4 @@ class LaunchableTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeI
         this._onDidChangeTreeData.event;
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {}
