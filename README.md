@@ -6,9 +6,11 @@ An extension to use [Launchable](https://www.launchableinc.com/) features in Vis
 
 ## Usage
 
-After installing the extension, click the Launchable icon in the Activity Bar. Then, press the button `Start Test` in the view. You'll be asked to enter [API key](https://www.launchableinc.com/docs/sending-data-to-launchable/using-the-launchable-cli/getting-started/#creating-and-setting-your-api-key) and select the test runner.
+Upon installation, click the Launchable icon in the Activity Bar, and then, press the `Start Test` button in the view. You'll be prompted to enter your [API key](https://www.launchableinc.com/docs/sending-data-to-launchable/using-the-launchable-cli/getting-started/#creating-and-setting-your-api-key) and choose the test runner.
 
-After a while, the result will be appeared as follows. If you click it, you can check the result in Lauchable Web Console!
+After a brief moment, the result will appeare as shown below. Clicking on them allows you to further inspect the results in the Launchable Web Console.
+
+For more detailed information, please refer to https://www.launchableinc.com/docs/features/predictive-test-selection/launchable-extension-for-visual-studio-code/.
 
 ![result-view](images/result-view.png)
 
@@ -16,14 +18,6 @@ After a while, the result will be appeared as follows. If you click it, you can 
 
 * [Launchable CLI](https://pypi.org/project/launchable/)
 * [Python extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-
-## Supported test runners
-
-* maven
-* rspec
-* go-test
-* pytest
-* file
 
 ## Extension Settings
 
@@ -61,3 +55,8 @@ You can configure a subset optimization target in the following fields. If you w
 * `launchable.optimizationTarget.fixedTime`: Fixed time target
 * `launchable.optimizationTarget.percentageTime`: Percentage time taget
     * `percentageTime` field is configured as "80%" in the default.
+ 
+
+## Additional resources
+
+[Blog: Intro to Launchable Visual Studio Code Extension](https://www.launchableinc.com/blog/intro-to-launchable-visual-studio-code-extension/)
