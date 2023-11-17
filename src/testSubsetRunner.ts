@@ -204,10 +204,10 @@ export class TestSubsetRunner {
         if (percentage) {
             subsetCommand += ` --target ${percentage}`;
         }
+        subsetCommand += ` ${this.testRunner.name}`;
         if (this.testRunner.testCasePath) {
             subsetCommand += ` ${this.testRunner.testCasePath}`;
         }
-        subsetCommand += ` ${this.testRunner.name}`;
         let stdout: string;
         try {
             const result = await this.execLaunchableCommand(subsetCommand, this.execOpts);
