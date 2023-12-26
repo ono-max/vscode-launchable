@@ -18,7 +18,7 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": [],
+    "activationEvents": ["onStartupFinished"],
     "main": "./out/extension.js",
     "contributes": {
         "viewsContainers": {
@@ -34,6 +34,10 @@
             {
                 "command": "launchable.initSettings",
                 "title": "Launchable: Initialize Settings"
+            },
+            {
+                "command": "sample",
+                "title": "sample"
             }
         ],
         "views": {

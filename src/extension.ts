@@ -1,13 +1,19 @@
 import * as vscode from "vscode";
 
 import * as fs from "fs";
+import * as asyncfs from "fs/promises";
+import * as path from "path";
+import * as os from "os";
 import { Maven } from "./maven";
 import { Rspec } from "./rspec";
 import { TestSubsetRunner } from "./testSubsetRunner";
 import { LaunchableTreeItem, inputTestRunner } from "./utils";
 
+const launchableCandidateRepositoriesKey = "LaunchableCandidateRepositories";
+
 export function activate(context: vscode.ExtensionContext) {
     const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
+    asyncInsertCandidateRepositories(context.globalState);
 
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider("launchableTreeView", provider),
@@ -23,7 +29,78 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand("launchable.initSettings", () => {
             provider.initSettings();
         }),
+
+        vscode.window.registerUriHandler({
+            async handleUri(uri: vscode.Uri) {
+                const candidateRepositoriesMap = context.globalState.get<Map<string, string[]>>(
+                    launchableCandidateRepositoriesKey,
+                );
+                if (!(candidateRepositoriesMap instanceof Map)) {
+                    return;
+                }
+                const params = new URLSearchParams(uri.query);
+                const fullPaths = candidateRepositoriesMap.get(params.get("workspace") || "");
+                if (fullPaths === undefined) {
+                    return;
+                }
+                const targetPath = await findTargetPath(fullPaths);
+                if (targetPath === undefined) {
+                    return;
+                }
+                const repo = vscode.Uri.file(targetPath);
+                vscode.workspace.updateWorkspaceFolders(0, 0, { uri: repo });
+                await vscode.window.tabGroups.close(vscode.window.tabGroups.activeTabGroup);
+                const param = vscode.Uri.joinPath(repo, params.get("file") || "");
+                const opts: vscode.TextDocumentShowOptions = {
+                    preserveFocus: true,
+                };
+                await vscode.commands.executeCommand("vscode.open", param, opts);
+            },
+        }),
     );
+}
+
+async function findTargetPath(fullPaths: string[]) {
+    for (const fullPath of fullPaths) {
+        try {
+            await asyncfs.access(fullPath);
+        } catch (error) {
+            continue;
+        }
+        return fullPath;
+    }
+}
+
+async function asyncInsertCandidateRepositories(memento: vscode.Memento) {
+    const gitDirs = new Map<string, string[]>();
+    await findGitDirectories(gitDirs, os.homedir(), 15);
+    memento.update(launchableCandidateRepositoriesKey, gitDirs);
+}
+
+async function findGitDirectories(gitDirs: Map<string, string[]>, targetDir: string, maxDepth: number) {
+    if (maxDepth === 0) {
+        return;
+    }
+    let dirs: fs.Dirent[];
+    try {
+        dirs = await asyncfs.readdir(targetDir, { withFileTypes: true });
+    } catch (error) {
+        return;
+    }
+    for (const dir of dirs) {
+        if (dir.isDirectory()) {
+            if (dir.name === ".git") {
+                const fullPaths = gitDirs.get(path.basename(targetDir));
+                if (fullPaths === undefined) {
+                    gitDirs.set(path.basename(targetDir), [targetDir]);
+                } else {
+                    gitDirs.set(path.basename(targetDir), [...fullPaths, targetDir]);
+                }
+            } else {
+                await findGitDirectories(gitDirs, path.join(targetDir, dir.name), maxDepth - 1);
+            }
+        }
+    }
 }
 
 const launchableTokenKey = "LaunchableToken";
