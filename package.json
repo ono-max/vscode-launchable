@@ -18,7 +18,9 @@
     "categories": [
         "Other"
     ],
-    "activationEvents": ["onStartupFinished"],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
     "main": "./out/extension.js",
     "contributes": {
         "viewsContainers": {
