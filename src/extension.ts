@@ -39,35 +39,77 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 const params = new URLSearchParams(uri.query);
-                const fullPaths = candidateRepositoriesMap.get(params.get("workspace") || "");
-                if (fullPaths === undefined) {
+                const candidateRepos = candidateRepositoriesMap.get(params.get("workspace") || "");
+                if (candidateRepos === undefined) {
                     return;
                 }
-                const targetPath = await findTargetPath(fullPaths);
-                if (targetPath === undefined) {
-                    return;
+                // file example: src/test/foo_test.py
+                const file = params.get("file");
+                let targetFilePath: string = "";
+                let repositoryPath: string = "";
+                if (file !== null) {
+                    const repo = await findRepositoryPath(candidateRepos, file);
+                    if (repo === undefined) {
+                        return;
+                    }
+                    repositoryPath = repo;
+                    targetFilePath = path.join(repositoryPath, file);
+                } else {
+                    // package example: src/test/java/com/sample
+                    const pkg = params.get("package");
+                    // class example: com.sample.service.FooBar
+                    const klass = params.get("class");
+                    if (pkg !== null && klass !== null) {
+                        const baseName = klass.split(".").pop();
+                        if (baseName === undefined) {
+                            return;
+                        }
+                        const fileName = await resolveExtensionName(candidateRepos, pkg, baseName);
+                        if (fileName === undefined) {
+                            return;
+                        }
+                        const repo = await findRepositoryPath(candidateRepos, path.join(pkg, fileName));
+                        if (repo === undefined) {
+                            return;
+                        }
+                        repositoryPath = repo;
+                        targetFilePath = path.join(repositoryPath, path.join(pkg, fileName));
+                    }
                 }
-                const repo = vscode.Uri.file(targetPath);
-                vscode.workspace.updateWorkspaceFolders(0, 0, { uri: repo });
+                vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.file(repositoryPath) });
                 await vscode.window.tabGroups.close(vscode.window.tabGroups.activeTabGroup);
-                const param = vscode.Uri.joinPath(repo, params.get("file") || "");
                 const opts: vscode.TextDocumentShowOptions = {
                     preserveFocus: true,
                 };
-                await vscode.commands.executeCommand("vscode.open", param, opts);
+                await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(targetFilePath), opts);
             },
         }),
     );
 }
 
-async function findTargetPath(fullPaths: string[]) {
-    for (const fullPath of fullPaths) {
+async function findRepositoryPath(candidateRepoPaths: string[], targetFileRelativePath: string) {
+    for (const candidate of candidateRepoPaths) {
         try {
-            await asyncfs.access(fullPath);
+            await asyncfs.access(path.join(candidate, targetFileRelativePath));
         } catch (error) {
             continue;
         }
-        return fullPath;
+        return candidate;
+    }
+}
+
+async function resolveExtensionName(candidateRepoPaths: string[], targetFileRelativePath: string, baseName: string) {
+    for (const candidate of candidateRepoPaths) {
+        try {
+            const files = await asyncfs.readdir(path.join(candidate, targetFileRelativePath), { withFileTypes: true });
+            for (const file of files) {
+                if (file.isFile() && file.name.startsWith(baseName)) {
+                    return file.name;
+                }
+            }
+        } catch (error) {
+            continue;
+        }
     }
 }
 
