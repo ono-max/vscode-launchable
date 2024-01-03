@@ -10,10 +10,21 @@ import { TestSubsetRunner } from "./testSubsetRunner";
 import { LaunchableTreeItem, inputTestRunner } from "./utils";
 
 const launchableCandidateRepositoriesKey = "LaunchableCandidateRepositories";
+const launchableTargetFileKey = "LaunchableTargetFile";
 
 export function activate(context: vscode.ExtensionContext) {
     const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
+    context.globalState.setKeysForSync([launchableCandidateRepositoriesKey]);
     asyncInsertCandidateRepositories(context.globalState);
+
+    const launchableTargetFile = context.globalState.get<string>(launchableTargetFileKey);
+    if (launchableTargetFile !== undefined) {
+        const opts: vscode.TextDocumentShowOptions = {
+            preserveFocus: true,
+        };
+        vscode.commands.executeCommand("vscode.open", vscode.Uri.file(launchableTargetFile), opts);
+        context.globalState.update(launchableTargetFileKey, undefined);
+    }
 
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider("launchableTreeView", provider),
@@ -32,14 +43,14 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.window.registerUriHandler({
             async handleUri(uri: vscode.Uri) {
-                const candidateRepositoriesMap = context.globalState.get<Map<string, string[]>>(
+                const candidateRepositoriesMap = context.globalState.get<CandidateRepositories>(
                     launchableCandidateRepositoriesKey,
                 );
-                if (!(candidateRepositoriesMap instanceof Map)) {
+                if (candidateRepositoriesMap === undefined) {
                     return;
                 }
                 const params = new URLSearchParams(uri.query);
-                const candidateRepos = candidateRepositoriesMap.get(params.get("workspace") || "");
+                const candidateRepos = candidateRepositoriesMap[params.get("workspace") || ""];
                 if (candidateRepos === undefined) {
                     return;
                 }
@@ -76,12 +87,16 @@ export function activate(context: vscode.ExtensionContext) {
                         targetFilePath = path.join(repositoryPath, path.join(pkg, fileName));
                     }
                 }
-                vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.file(repositoryPath) });
-                await vscode.window.tabGroups.close(vscode.window.tabGroups.activeTabGroup);
-                const opts: vscode.TextDocumentShowOptions = {
-                    preserveFocus: true,
-                };
-                await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(targetFilePath), opts);
+                const folders = vscode.workspace.workspaceFolders;
+                if (folders && folders[0].uri.path === repositoryPath) {
+                    await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(targetFilePath));
+                    await context.globalState.update(launchableTargetFileKey, undefined);
+                } else {
+                    await context.globalState.update(launchableTargetFileKey, targetFilePath);
+                    await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(repositoryPath), {
+                        forceNewWindow: true,
+                    });
+                }
             },
         }),
     );
@@ -90,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 async function findRepositoryPath(candidateRepoPaths: string[], targetFileRelativePath: string) {
     for (const candidate of candidateRepoPaths) {
         try {
-            await asyncfs.access(path.join(candidate, targetFileRelativePath));
+            await asyncfs.access(path.join(candidate, targetFileRelativePath), fs.constants.R_OK);
         } catch (error) {
             continue;
         }
@@ -113,13 +128,22 @@ async function resolveExtensionName(candidateRepoPaths: string[], targetFileRela
     }
 }
 
-async function asyncInsertCandidateRepositories(memento: vscode.Memento) {
-    const gitDirs = new Map<string, string[]>();
-    await findGitDirectories(gitDirs, os.homedir(), 15);
-    memento.update(launchableCandidateRepositoriesKey, gitDirs);
+interface CandidateRepositories {
+    [key: string]: string[];
 }
 
-async function findGitDirectories(gitDirs: Map<string, string[]>, targetDir: string, maxDepth: number) {
+async function asyncInsertCandidateRepositories(memento: vscode.Memento) {
+    const candidateRepositoriesMap = memento.get<Map<string, string[]>>(launchableCandidateRepositoriesKey);
+    if (candidateRepositoriesMap instanceof Map) {
+        return;
+    }
+    const gitDirs: CandidateRepositories = {};
+    await findCandidateRepositories(gitDirs, os.homedir(), 10);
+    await memento.update(launchableCandidateRepositoriesKey, gitDirs);
+    outputChannel.appendLine("Candidate Repository Map is created");
+}
+
+async function findCandidateRepositories(gitDirs: CandidateRepositories, targetDir: string, maxDepth: number) {
     if (maxDepth === 0) {
         return;
     }
@@ -132,14 +156,14 @@ async function findGitDirectories(gitDirs: Map<string, string[]>, targetDir: str
     for (const dir of dirs) {
         if (dir.isDirectory()) {
             if (dir.name === ".git") {
-                const fullPaths = gitDirs.get(path.basename(targetDir));
+                const fullPaths = gitDirs[path.basename(targetDir)];
                 if (fullPaths === undefined) {
-                    gitDirs.set(path.basename(targetDir), [targetDir]);
+                    gitDirs[path.basename(targetDir)] = [targetDir];
                 } else {
-                    gitDirs.set(path.basename(targetDir), [...fullPaths, targetDir]);
+                    gitDirs[path.basename(targetDir)] = [...fullPaths, targetDir];
                 }
             } else {
-                await findGitDirectories(gitDirs, path.join(targetDir, dir.name), maxDepth - 1);
+                await findCandidateRepositories(gitDirs, path.join(targetDir, dir.name), maxDepth - 1);
             }
         }
     }
