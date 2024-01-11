@@ -138,7 +138,7 @@ async function asyncInsertCandidateRepositories(memento: vscode.Memento) {
         return;
     }
     const gitDirs: CandidateRepositories = {};
-    await findCandidateRepositories(gitDirs, os.homedir(), 10);
+    await findCandidateRepositories(gitDirs, os.homedir(), 2);
     await memento.update(launchableCandidateRepositoriesKey, gitDirs);
     outputChannel.appendLine("Candidate Repository Map is created");
 }
