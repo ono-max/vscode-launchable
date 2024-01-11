@@ -43,11 +43,13 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.window.registerUriHandler({
             async handleUri(uri: vscode.Uri) {
-                const candidateRepositoriesMap = context.globalState.get<CandidateRepositories>(
+                let candidateRepositoriesMap = context.globalState.get<CandidateRepositories>(
                     launchableCandidateRepositoriesKey,
                 );
                 if (candidateRepositoriesMap === undefined) {
-                    return;
+                    candidateRepositoriesMap = {};
+                    await findCandidateRepositories(candidateRepositoriesMap, os.homedir(), 3);
+                    await context.globalState.update(launchableCandidateRepositoriesKey, candidateRepositoriesMap);
                 }
                 const params = new URLSearchParams(uri.query);
                 const candidateRepos = candidateRepositoriesMap[params.get("workspace") || ""];
@@ -133,12 +135,8 @@ interface CandidateRepositories {
 }
 
 async function asyncInsertCandidateRepositories(memento: vscode.Memento) {
-    const candidateRepositoriesMap = memento.get<Map<string, string[]>>(launchableCandidateRepositoriesKey);
-    if (candidateRepositoriesMap instanceof Map) {
-        return;
-    }
     const gitDirs: CandidateRepositories = {};
-    await findCandidateRepositories(gitDirs, os.homedir(), 2);
+    await findCandidateRepositories(gitDirs, os.homedir(), 10);
     await memento.update(launchableCandidateRepositoriesKey, gitDirs);
     outputChannel.appendLine("Candidate Repository Map is created");
 }
