@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
                 );
                 if (candidateRepositoriesMap === undefined) {
                     candidateRepositoriesMap = {};
-                    await findCandidateRepositories(candidateRepositoriesMap, os.homedir(), 3);
+                    await findCandidateRepositories(candidateRepositoriesMap, os.homedir(), 5);
                     await context.globalState.update(launchableCandidateRepositoriesKey, candidateRepositoriesMap);
                 }
                 const params = new URLSearchParams(uri.query);
