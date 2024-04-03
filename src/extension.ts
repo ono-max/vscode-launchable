@@ -10,21 +10,11 @@ import { TestSubsetRunner } from "./testSubsetRunner";
 import { LaunchableTreeItem, inputTestRunner } from "./utils";
 
 const launchableCandidateRepositoriesKey = "LaunchableCandidateRepositories";
-const launchableTargetFileKey = "LaunchableTargetFile";
 
 export function activate(context: vscode.ExtensionContext) {
     const provider = new LaunchableTreeDataProvider(context.secrets, context.workspaceState);
     context.globalState.setKeysForSync([launchableCandidateRepositoriesKey]);
     asyncInsertCandidateRepositories(context.globalState);
-
-    const launchableTargetFile = context.globalState.get<string>(launchableTargetFileKey);
-    if (launchableTargetFile !== undefined) {
-        const opts: vscode.TextDocumentShowOptions = {
-            preserveFocus: true,
-        };
-        vscode.commands.executeCommand("vscode.open", vscode.Uri.file(launchableTargetFile), opts);
-        context.globalState.update(launchableTargetFileKey, undefined);
-    }
 
     context.subscriptions.push(
         vscode.window.registerTreeDataProvider("launchableTreeView", provider),
@@ -89,15 +79,25 @@ export function activate(context: vscode.ExtensionContext) {
                         targetFilePath = path.join(repositoryPath, path.join(pkg, fileName));
                     }
                 }
+                const lineNumber = convertStringToInt(params.get("lineNumber") || "");
                 const folders = vscode.workspace.workspaceFolders;
                 if (folders && folders[0].uri.path === repositoryPath) {
-                    await vscode.commands.executeCommand("vscode.open", vscode.Uri.file(targetFilePath));
-                    await context.globalState.update(launchableTargetFileKey, undefined);
-                } else {
-                    await context.globalState.update(launchableTargetFileKey, targetFilePath);
-                    await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(repositoryPath), {
-                        forceNewWindow: true,
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(targetFilePath));
+                    await vscode.window.showTextDocument(doc, {
+                        selection: new vscode.Range(lineNumber, 0, lineNumber, 0),
                     });
+                } else {
+                    const doc = await vscode.workspace.openTextDocument(targetFilePath);
+                    await vscode.window.showTextDocument(doc, {
+                        selection: new vscode.Range(lineNumber, 0, lineNumber, 0),
+                        preserveFocus: true,
+                    });
+
+                    vscode.workspace.updateWorkspaceFolders(
+                        vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0,
+                        null,
+                        { uri: vscode.Uri.file(repositoryPath) },
+                    );
                 }
             },
         }),
@@ -113,6 +113,14 @@ async function findRepositoryPath(candidateRepoPaths: string[], targetFileRelati
         }
         return candidate;
     }
+}
+
+function convertStringToInt(string: string) {
+    const int = parseInt(string, 10);
+    if (isNaN(int)) {
+        return 0;
+    }
+    return int;
 }
 
 async function resolveExtensionName(candidateRepoPaths: string[], targetFileRelativePath: string, baseName: string) {
