@@ -79,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
                         targetFilePath = path.join(repositoryPath, path.join(pkg, fileName));
                     }
                 }
-                const lineNumber = convertStringToInt(params.get("lineNumber") || "");
+                const lineNumber = getZeroBasedLineNumber(params.get("lineNumber") || "");
                 const folders = vscode.workspace.workspaceFolders;
                 if (folders && folders[0].uri.path === repositoryPath) {
                     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(targetFilePath));
@@ -90,7 +90,6 @@ export function activate(context: vscode.ExtensionContext) {
                     const doc = await vscode.workspace.openTextDocument(targetFilePath);
                     await vscode.window.showTextDocument(doc, {
                         selection: new vscode.Range(lineNumber, 0, lineNumber, 0),
-                        preserveFocus: true,
                     });
 
                     vscode.workspace.updateWorkspaceFolders(
@@ -115,12 +114,12 @@ async function findRepositoryPath(candidateRepoPaths: string[], targetFileRelati
     }
 }
 
-function convertStringToInt(string: string) {
+function getZeroBasedLineNumber(string: string) {
     const int = parseInt(string, 10);
     if (isNaN(int)) {
         return 0;
     }
-    return int;
+    return int - 1;
 }
 
 async function resolveExtensionName(candidateRepoPaths: string[], targetFileRelativePath: string, baseName: string) {
